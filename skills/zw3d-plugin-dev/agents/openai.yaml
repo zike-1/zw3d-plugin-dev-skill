@@ -1,0 +1,4 @@
+interface:
+  display_name: "中望3D插件开发"
+  short_description: "用经过验证的模板开发插件，统一接入中望3D工具箱并独立安装卸载"
+  default_prompt: "使用 $zw3d-plugin-dev 开发一个接入共用工具箱的中望3D插件，验证功能、安装和卸载，再交付独立安装包。"

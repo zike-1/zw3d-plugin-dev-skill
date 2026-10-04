@@ -1,0 +1,82 @@
+[
+  {
+    "environment": "0",
+    "folder": "Environment-0-Top",
+    "layout": "Layout_0_Top"
+  },
+  {
+    "environment": "1",
+    "folder": "Environment-1-Root",
+    "layout": "Layout_1_Root"
+  },
+  {
+    "environment": "10",
+    "folder": "Environment-10-Part",
+    "layout": "Layout_10_Part"
+  },
+  {
+    "environment": "11",
+    "folder": "Environment-11-ECAD Assembly",
+    "layout": "Layout_11_EcadAsm"
+  },
+  {
+    "environment": "12",
+    "folder": "Environment-12-ECAD Part",
+    "layout": "Layout_12_EcadPart"
+  },
+  {
+    "environment": "13",
+    "folder": "Environment-13-Assembly",
+    "layout": "Layout_13_Asm"
+  },
+  {
+    "environment": "17",
+    "folder": "Environment-17-Master Layout",
+    "layout": "Layout_17_MasLayPrt"
+  },
+  {
+    "environment": "19",
+    "folder": "Environment-19-Cam",
+    "layout": "Layout_19_CAM2"
+  },
+  {
+    "environment": "2",
+    "folder": "Environment-2-Z3",
+    "layout": "Layout_2_Z3"
+  },
+  {
+    "environment": "3",
+    "folder": "Environment-3-Sketch",
+    "layout": "Layout_3_Sketch"
+  },
+  {
+    "environment": "4",
+    "folder": "Environment-4-Sheet",
+    "layout": "Layout_4_Sheet"
+  },
+  {
+    "environment": "5",
+    "folder": "Environment-5-Packet",
+    "layout": "Layout_5_Packet"
+  },
+  {
+    "environment": "6",
+    "folder": "Environment-6-Cam",
+    "layout": "Layout_6_CAM"
+  },
+  {
+    "environment": "7",
+    "folder": "Environment-7-Animation",
+    "layout": "Layout_7_Animation"
+  },
+  {
+    "environment": "8",
+    "folder": "Environment-8-ExplodedView",
+    "layout": "Layout_8_ExpView"
+  },
+  {
+    "environment": "9",
+    "folder": "Environment-9-3DSketch",
+    "layout": "Layout_9_Sketch3D"
+  }
+]

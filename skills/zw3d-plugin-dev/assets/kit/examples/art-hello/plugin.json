@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "org.zwtools.art-hello",
+  "name": "优雅问候",
+  "version": "1.1.0",
+  "type": "dll",
+  "entry": "ArtHello.dll",
+  "prefix": "ArtHello",
+  "host": {
+    "product": "ZW3D",
+    "versions": [
+      2027
+    ],
+    "architecture": "x64"
+  },
+  "commands": [
+    {
+      "id": "ArtHelloShow",
+      "label": "优雅问候",
+      "environments": [
+        "top",
+        "part",
+        "assembly",
+        "drawing"
+      ],
+      "icon": "resources/tool.png",
+      "tooltip": "演示独立安装、图标和更新"
+    }
+  ],
+  "dataPolicy": "preserve",
+  "hotUnload": false,
+  "description": "演示独立安装、图标和更新"
+}

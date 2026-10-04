@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.dll -text
+*.exe -text
+*.zip -text
+*.zwplug -text
+*.png -text
+# Preserve upstream license bytes and whitespace exactly as distributed.
+licenses/*.txt -text -whitespace
+skills/zw3d-plugin-dev/licenses/*.txt -text -whitespace

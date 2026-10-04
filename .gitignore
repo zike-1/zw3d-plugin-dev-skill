@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.env
+.env.*
+.build-tools/
+work/
+dist/
+verification/
+release/*.zip
+release/*.json
+release/SHA256SUMS*.txt
+release/ZW3D2027-*/
+tests/package_delivery_result.json
+tests/startup-handshake-result.json
+tests/.startup-handshake-*/

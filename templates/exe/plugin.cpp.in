@@ -1,0 +1,53 @@
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellapi.h>
+#include <string>
+
+namespace {
+[[maybe_unused]] std::wstring ModuleDirectory() {
+    wchar_t path[32768]{};
+    const DWORD length = GetModuleFileNameW(nullptr, path, 32768);
+    if (length == 0 || length >= 32768) return {};
+    std::wstring result(path, length);
+    const auto separator = result.find_last_of(L"\\/");
+    return separator == std::wstring::npos ? L"" : result.substr(0, separator);
+}
+
+bool IsAbsolutePath(const std::wstring& path) {
+    const bool drive = path.size() >= 3 && path[1] == L':' &&
+                       (path[2] == L'\\' || path[2] == L'/');
+    const bool unc = path.size() >= 3 && path[0] == L'\\' && path[1] == L'\\';
+    return drive || unc;
+}
+
+int WriteProbe(const std::wstring& path) {
+    if (!IsAbsolutePath(path)) return 2;
+    HANDLE file = CreateFileW(path.c_str(), FILE_APPEND_DATA,
+                             FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                             OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE) return 3;
+    constexpr char record[] = "exe|@PREFIX@|ok\n";
+    DWORD written = 0;
+    const bool okay = WriteFile(file, record, sizeof(record) - 1, &written, nullptr) &&
+                      written == sizeof(record) - 1 && FlushFileBuffers(file);
+    CloseHandle(file);
+    return okay ? 0 : 3;
+}
+}  // namespace
+
+int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
+    int count = 0;
+    LPWSTR* arguments = CommandLineToArgvW(GetCommandLineW(), &count);
+    if (!arguments) return 2;
+    const std::wstring argument = count == 2 ? arguments[1] : L"";
+    LocalFree(arguments);
+    if (count != 1) {
+        constexpr wchar_t probePrefix[] = L"/probe=";
+        if (count == 2 && argument.rfind(probePrefix, 0) == 0)
+            return WriteProbe(argument.substr(7));
+        return 2;
+    }
+
+    MessageBoxW(nullptr, L"@MESSAGE@", L"@NAME@", MB_OK | MB_ICONINFORMATION);
+    return 0;
+}

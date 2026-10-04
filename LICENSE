@@ -1,0 +1,37 @@
+ZW3D Plugin Development Skill — Attribution / Noncommercial License 1.0
+中望3D插件开发技能 — 署名与非商业使用授权 1.0
+
+Copyright (c) 2026 zike-1
+项目来源：https://github.com/zike-1/zw3d-plugin-dev-skill
+
+1. 授权范围
+在非商业用途下，任何人可免费使用、复制、修改和分享本项目由作者享有权利的
+源码、技能、模板、示例、图标及编译发行物，无需另行征求同意。
+
+2. 署名与分享
+分享原版、修改版或包含本项目材料的作品时，应保留本授权文本、原有版权和
+第三方声明，并在随附说明中注明作者 zike-1 及上述项目链接。
+修改版应说明修改内容，不得冒称为原作者发布的版本。
+
+3. 商业用途
+商业用途须事先取得权利人的单独书面许可；注明来源本身不构成商业授权。
+商业用途包括以商业利益为目的的使用、销售、付费服务或商业产品集成。
+申请可通过项目仓库 Issue 联系作者；作者的明确书面同意才构成许可。
+
+4. 使用技能生成作品
+自行编写且未复制本项目材料的业务代码，其权利属于相应作者。本授权不会
+仅因作者阅读技能或使用构建工具就自动覆盖其独立代码。
+复制或改编本项目模板、示例或框架的部分，以及随作品分发的本项目运行时，
+仍受本授权约束；用于商业用途时仍须取得单独许可。
+
+5. 第三方材料
+第三方组件适用各自的授权，见 THIRD_PARTY_NOTICES.md 和 licenses/。
+本授权不改变这些组件的权利和义务，也不授予中望SDK、宿主软件或商标权利。
+
+6. 保证与责任
+本项目按现状提供，不作适销性、特定用途适用性或无侵权等保证。
+在适用法律允许的范围内，作者不承担因使用本项目产生的损失责任。
+
+This project permits noncommercial use, modification and redistribution with
+attribution to zike-1 and the project URL. Commercial use requires separate
+prior written permission. The Chinese terms above govern this license.

@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:zw3d-plugin:manifest:v1",
+  "title": "ZW3D plugin manifest v1",
+  "description": "Editor assistance. tools/package_lib.py additionally checks Windows paths, prefix-derived IDs, binaries, and checksums.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "version",
+    "prefix",
+    "type",
+    "host",
+    "entry",
+    "commands",
+    "dataPolicy",
+    "hotUnload"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "maxLength": 80,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\\.[a-z][a-z0-9]*(?:-[a-z0-9]+)*)+$"
+    },
+    "name": {
+      "$ref": "#/$defs/label"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,5})\\.(0|[1-9][0-9]{0,5})\\.(0|[1-9][0-9]{0,5})$"
+    },
+    "prefix": {
+      "type": "string",
+      "pattern": "^(?![Hh][Uu][Bb])(?![Zz][Ww][Pp][Ll][Uu][Gg][Ii][Nn][Hh][Uu][Bb])(?![Ii][Dd][Zz][Pp][Hh][Uu][Bb])[A-Z][A-Za-z0-9]{1,31}$"
+    },
+    "type": {
+      "enum": [
+        "dll",
+        "exe"
+      ]
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product",
+        "versions",
+        "architecture"
+      ],
+      "properties": {
+        "product": {
+          "const": "ZW3D"
+        },
+        "versions": {
+          "const": [
+            2027
+          ]
+        },
+        "architecture": {
+          "const": "x64"
+        }
+      }
+    },
+    "entry": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 180
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/command"
+      }
+    },
+    "dataPolicy": {
+      "const": "preserve"
+    },
+    "hotUnload": {
+      "const": false
+    },
+    "description": {
+      "$ref": "#/$defs/longLabel"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "dll"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "entry": {
+            "pattern": "\\.[dD][lL][lL]$"
+          },
+          "commands": {
+            "items": {
+              "not": {
+                "required": [
+                  "arguments"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "exe"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "entry": {
+            "pattern": "\\.[eE][xX][eE]$"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[^=\\u0000-\\u001f\\u007f]+$"
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "environments"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]{1,63}$"
+        },
+        "label": {
+          "$ref": "#/$defs/label"
+        },
+        "environments": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "top",
+              "part",
+              "assembly",
+              "drawing"
+            ]
+          }
+        },
+        "arguments": {
+          "type": "string",
+          "maxLength": 1024,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+        },
+        "icon": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180,
+          "pattern": "\\.png$"
+        },
+        "tooltip": {
+          "$ref": "#/$defs/longLabel"
+        }
+      }
+    },
+    "longLabel": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240,
+      "pattern": "^[^=\\u0000-\\u001f\\u007f]+$"
+    }
+  }
+}
