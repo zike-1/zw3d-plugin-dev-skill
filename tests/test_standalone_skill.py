@@ -111,7 +111,7 @@ class ReleasedSkillVerification:
         for relative in ("references/package-contract.md", "references/acceptance.md"):
             require((skill.parent / relative).is_file(), f"missing referenced document: {relative}")
             (skill.parent / relative).read_text(encoding="utf-8")
-        runtime = self.kit / "runtime" / "1.1.3"
+        runtime = self.kit / "runtime" / "1.1.4"
         require((runtime / "ZwPluginHub.dll").is_file()
                 and (runtime / "HubManager.exe").is_file(), "frozen common runtime is missing")
         self.runtime_hashes = {name: sha256(runtime / name)
@@ -151,7 +151,7 @@ class ReleasedSkillVerification:
                                                 name=prefix + "-validate"))
         require(validation.get("status") == "PASS", "package validator did not report PASS")
         self.python_tool("tools/inspect_installer.py", str(installer), str(package),
-                         "--framework-bin", str(self.kit / "runtime" / "1.1.3"),
+                         "--framework-bin", str(self.kit / "runtime" / "1.1.4"),
                          "--sdk", str(self.args.sdk), name=prefix + "-inspect")
         run_directory = project / "只读测试 路径"
         run_directory.mkdir()

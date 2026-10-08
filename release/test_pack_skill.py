@@ -23,12 +23,12 @@ class ReleaseAssemblyTests(unittest.TestCase):
             self.put(f"{directory}/fixture.py", b"# fixture source\n")
         for name in pack_skill.EXAMPLES:
             self.put(f"examples/{name}/plugin.json", b'{"fixture":true}\n')
-        self.put("runtime/1.1.3/ZwPluginHub.dll", b"synthetic hub, not an executable")
-        self.put("runtime/1.1.3/HubManager.exe", b"synthetic manager, not an executable")
-        runtime = self.root / "runtime" / "1.1.3"
+        self.put("runtime/1.1.4/ZwPluginHub.dll", b"synthetic hub, not an executable")
+        self.put("runtime/1.1.4/HubManager.exe", b"synthetic manager, not an executable")
+        runtime = self.root / "runtime" / "1.1.4"
         checksums = {name: pack_skill.digest((runtime / name).read_bytes())
                      for name in ("ZwPluginHub.dll", "HubManager.exe")}
-        self.put("runtime/1.1.3/checksums.json", pack_skill.json_bytes(checksums))
+        self.put("runtime/1.1.4/checksums.json", pack_skill.json_bytes(checksums))
         skill = f"skills/{pack_skill.SKILL_NAME}"
         self.put(f"{skill}/SKILL.md", b"---\nname: zw3d-plugin-dev\ndescription: fixture\n---\n")
         self.put(f"{skill}/references/contract.md", b"fixture contract\n")
@@ -63,7 +63,7 @@ class ReleaseAssemblyTests(unittest.TestCase):
         with zipfile.ZipFile(artifact) as archive:
             names = archive.namelist()
             self.assertIn("zw3d-plugin-dev/SKILL.md", names)
-            self.assertIn("zw3d-plugin-dev/assets/kit/runtime/1.1.3/HubManager.exe", names)
+            self.assertIn("zw3d-plugin-dev/assets/kit/runtime/1.1.4/HubManager.exe", names)
             self.assertFalse(any(".env" in name or "__pycache__" in name or "/logs/" in name for name in names))
             self.assertTrue(all(item.date_time == (1980, 1, 1, 0, 0, 0) for item in archive.infolist()))
             self.assertEqual(len(names), len(set(name.casefold() for name in names)))
@@ -74,9 +74,9 @@ class ReleaseAssemblyTests(unittest.TestCase):
         # Binary CRLF bytes deliberately remain raw. Only UTF-8 text gets Git's LF representation.
         raw_hub = b"fixture DLL\r\n\x00binary bytes\r\n"
         raw_manager = b"fixture EXE\r\n\x00binary bytes\r\n"
-        self.put("runtime/1.1.3/ZwPluginHub.dll", raw_hub)
-        self.put("runtime/1.1.3/HubManager.exe", raw_manager)
-        self.put("runtime/1.1.3/checksums.json", pack_skill.json_bytes({
+        self.put("runtime/1.1.4/ZwPluginHub.dll", raw_hub)
+        self.put("runtime/1.1.4/HubManager.exe", raw_manager)
+        self.put("runtime/1.1.4/checksums.json", pack_skill.json_bytes({
             "ZwPluginHub.dll": pack_skill.digest(raw_hub),
             "HubManager.exe": pack_skill.digest(raw_manager),
         }))
@@ -88,8 +88,8 @@ class ReleaseAssemblyTests(unittest.TestCase):
         actual = pack_skill.files_in(self.root, self.kit)
         hashes = pack_skill.read_json(actual[pack_skill.HASHES])["files"]
         self.assertTrue(all(pack_skill.digest(actual[name]) == digest for name, digest in hashes.items()))
-        self.assertEqual(actual["runtime/1.1.3/ZwPluginHub.dll"], raw_hub)
-        self.assertEqual(actual["runtime/1.1.3/HubManager.exe"], raw_manager)
+        self.assertEqual(actual["runtime/1.1.4/ZwPluginHub.dll"], raw_hub)
+        self.assertEqual(actual["runtime/1.1.4/HubManager.exe"], raw_manager)
         for name, data in actual.items():
             if not name.endswith((".dll", ".exe")):
                 self.assertNotIn(b"\r\n", data, name)
@@ -136,14 +136,14 @@ class ReleaseAssemblyTests(unittest.TestCase):
     def test_corrupt_runtime_changes_nothing(self):
         first = pack_skill.assemble(self.root)
         snapshot = pack_skill.files_in(self.root, self.kit)
-        self.put("runtime/1.1.3/HubManager.exe", b"unexpected bytes\n")
+        self.put("runtime/1.1.4/HubManager.exe", b"unexpected bytes\n")
         with self.assertRaisesRegex(ValueError, "runtime was modified"):
             pack_skill.assemble(self.root)
         self.assertEqual(pack_skill.files_in(self.root, self.kit), snapshot)
         self.assertEqual(pack_skill.digest(Path(first["artifact"]).read_bytes()), first["sha256"])
 
     def test_sdk_binary_is_not_an_allowed_runtime_artifact(self):
-        self.put("runtime/1.1.3/ZW3D.dll", b"synthetic SDK stand-in\n")
+        self.put("runtime/1.1.4/ZW3D.dll", b"synthetic SDK stand-in\n")
         with self.assertRaisesRegex(ValueError, "only the two framework binaries"):
             pack_skill.assemble(self.root)
         self.assertFalse(self.kit.exists())

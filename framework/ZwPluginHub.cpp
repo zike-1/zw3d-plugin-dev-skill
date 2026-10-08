@@ -41,7 +41,7 @@ bool startProcess(const fs::path& executable, const std::wstring& args, bool wai
 }
 void manage() {
     if (!startProcess(store(target) / L"HubManager.exe", L"/target=" + quote(target), false))
-        MessageBoxW(nullptr, L"管理器未能打开，请检查工具箱安装。", L"小插件工具箱", MB_ICONERROR);
+        MessageBoxW(nullptr, L"管理器未能打开，请检查工具箱安装。", L"扩展工具", MB_ICONERROR);
 }
 bool launchTool(const fs::path& file, std::wstring args, const fs::path& data, bool wait) {
     std::vector<std::wstring> values;
@@ -91,14 +91,14 @@ void launch(size_t index) {
     auto a = f.find(key);
     std::wstring args = a == f.end() ? L"" : wide(a->second);
     if (!launchTool(file, args, userData(target, f.at("id")), false))
-        MessageBoxW(nullptr, L"工具启动失败，请在管理插件中检查安装。", L"小插件工具箱",
+        MessageBoxW(nullptr, L"工具启动失败，请在插件管理中检查安装。", L"扩展工具",
                     MB_ICONERROR);
 }
 template <size_t N> void externalCallback() {
     try {
         launch(N);
     } catch (...) {
-        MessageBoxW(nullptr, L"工具启动失败，请检查插件文件与设置。", L"小插件工具箱",
+        MessageBoxW(nullptr, L"工具启动失败，请检查插件文件与设置。", L"扩展工具",
                     MB_ICONERROR);
     }
 }
@@ -205,7 +205,7 @@ extern "C" __declspec(dllexport) int ZwPluginHubInit() {
             atomicWrite(userData(target, "org.zwtools.plugin-hub") / L"startup.log", e.what());
         } catch (...) {
         }
-        MessageBoxW(nullptr, L"插件工具箱加载失败，请查看启动日志。", L"小插件工具箱",
+        MessageBoxW(nullptr, L"插件工具箱加载失败，请查看启动日志。", L"扩展工具",
                     MB_ICONERROR);
         return 1;
     }

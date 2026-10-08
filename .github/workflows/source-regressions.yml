@@ -1,0 +1,49 @@
+name: Source regressions
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  python-source-checks:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate Python syntax
+        run: python -m compileall -q tools templates release tests
+      - name: Run isolated build environment tests
+        run: python -m unittest discover -s tests -p test_build_environment.py -v
+      - name: Verify bundled skill kit integrity
+        run: python -m unittest discover -s tests -p test_kit_source_sync.py -v
+      - name: Check visible UI labels and stable internal names
+        run: python -m unittest discover -s tests -p test_ui_labels.py -v
+      - name: Exercise isolated release packager tests
+        run: python -m unittest discover -s release -p test_pack_skill.py -v
+      - name: Rebuild accepted v0.2.4 ZIP and compare SHA256
+        shell: pwsh
+        run: |
+          python release/pack_skill.py
+          $expected = 'c1b004a76d80aa22ace1d80417037915a1a7a6a066de509a9163eea5351d7aeb'
+          $actual = (Get-FileHash release/zw3d-plugin-dev-0.2.4.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "Release ZIP differs: $actual (expected $expected)" }
+      - name: Run existing source-only regression tests
+        run: |
+          python -m unittest discover -s templates/tests -v
+          python -m unittest discover -s tests -p test_release_guards.py -v
+
+  native-manager-syntax:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: mingw-w64-x86_64-gcc
+      - name: Check HubManager C++ source without proprietary SDK
+        shell: msys2 {0}
+        run: g++ -std=c++17 -DHUB_MANAGER -DUNICODE -D_UNICODE -fsyntax-only framework/setup.cpp

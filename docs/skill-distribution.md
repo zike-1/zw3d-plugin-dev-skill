@@ -2,7 +2,7 @@
 
 仓库源码与单独安装的技能必须使用同一套模板、框架和验证器。
 
-源码模式中，`skills/zw3d-plugin-dev/SKILL.md`引用仓库的`tools/`和`templates/`。单独发布技能时，通过同步脚本将当前的`framework/`、`tools/`、`templates/`与schema复制到技能的`assets/kit/`，并将对应候选的自编框架DLL与管理器放在`assets/kit/runtime/1.1.3/`；然后校验技能、构建示例，并在发布清单中记录这些文件的哈希。
+源码模式中，`skills/zw3d-plugin-dev/SKILL.md`引用仓库的`tools/`和`templates/`。单独发布技能时，通过同步脚本将当前的`framework/`、`tools/`、`templates/`与schema复制到技能的`assets/kit/`，并将对应候选的自编框架DLL与管理器放在`assets/kit/runtime/1.1.4/`；然后校验技能、构建示例，并在发布清单中记录这些文件的哈希。
 
 同步是构建动作，不是手工维护第二份代码。修改真实模板或验证器后，应重新生成技能包；不要直接修补生成目录。SDK、宿主程序、用户图纸、原始第三方安装器、开发机缓存和密钥均不进入技能包。
 

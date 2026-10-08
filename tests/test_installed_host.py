@@ -89,7 +89,7 @@ def main():
         env.pop('ZW_HUB_REQUIRE_PAGE_SELECTION', None)
         if args.interactive:
             env['ZW_HUB_REQUIRE_PAGE_SELECTION'] = '1'
-            print('Select the new 小插件 page in this empty test window; do not open a model.', flush=True)
+            print('Select the new 扩展工具 page in this empty test window; do not open a model.', flush=True)
         live = subprocess.Popen([str(sdk / 'zw3d.exe')], cwd=sdk, env=env, startupinfo=si)
         deadline = time.monotonic() + 150
         while not (out / 'host.log').exists() and time.monotonic() < deadline:

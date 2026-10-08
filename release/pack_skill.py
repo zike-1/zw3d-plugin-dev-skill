@@ -17,7 +17,7 @@ import zipfile
 
 PROJECT = Path(__file__).resolve().parents[1]
 SKILL_NAME = "zw3d-plugin-dev"
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 OWNER = "zw3d-plugin-dev-skill.release.pack_skill"
 MARKER = ".kit-owner.json"
 HASHES = "kit-sha256.json"
@@ -136,8 +136,8 @@ def kit_files(root: Path) -> dict[str, bytes]:
                 data = lf_text(data)
             source_bytes(root, relative, data)
             result[relative] = data
-    runtime = files_in(root, root / "runtime" / "1.1.3")
-    require(set(runtime) == RUNTIME_FILES, "runtime/1.1.3 must contain only the two framework binaries and checksums.json")
+    runtime = files_in(root, root / "runtime" / "1.1.4")
+    require(set(runtime) == RUNTIME_FILES, "runtime/1.1.4 must contain only the two framework binaries and checksums.json")
     runtime["checksums.json"] = lf_text(runtime["checksums.json"])
     checksums = read_json(runtime["checksums.json"])
     require(isinstance(checksums, dict) and set(checksums) == RUNTIME_FILES - {"checksums.json"},
@@ -145,7 +145,7 @@ def kit_files(root: Path) -> dict[str, bytes]:
     for name, checksum in checksums.items():
         require(isinstance(checksum, str) and re.fullmatch(r"[0-9a-f]{64}", checksum) is not None
                 and digest(runtime[name]) == checksum, f"Frozen runtime was modified: {name}")
-    result.update({f"runtime/1.1.3/{name}": data for name, data in runtime.items()})
+    result.update({f"runtime/1.1.4/{name}": data for name, data in runtime.items()})
     result[MARKER] = json_bytes(IDENTITY)
     result[HASHES] = json_bytes({"schemaVersion": 1, "files": {name: digest(data) for name, data in sorted(result.items())}})
     return result
