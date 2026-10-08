@@ -1,0 +1,35 @@
+name: Publish Skill v0.2.4
+
+# Release exactly once when the already-verified 1.1.4 runtime lands on main.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'runtime/1.1.4/HubManager.exe'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.repository == 'zike-1/zw3d-plugin-dev-skill' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build the accepted standalone skill ZIP
+        run: python release/pack_skill.py
+      - name: Verify exactly the accepted candidate
+        shell: bash
+        run: |
+          echo 'c1b004a76d80aa22ace1d80417037915a1a7a6a066de509a9163eea5351d7aeb  release/zw3d-plugin-dev-0.2.4.zip' | sha256sum --check -
+          cp /dev/null release/SHA256SUMS-0.2.4.txt
+          echo 'c1b004a76d80aa22ace1d80417037915a1a7a6a066de509a9163eea5351d7aeb  zw3d-plugin-dev-0.2.4.zip' > release/SHA256SUMS-0.2.4.txt
+      - name: Publish tag and release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.2.4             release/zw3d-plugin-dev-0.2.4.zip             release/SHA256SUMS-0.2.4.txt             --target "$GITHUB_SHA"             --title 'v0.2.4 · 扩展工具与 Framework 1.1.4'             --notes-file docs/release-0.2.4.md
