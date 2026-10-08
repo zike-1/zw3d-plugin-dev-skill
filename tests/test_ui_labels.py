@@ -8,12 +8,12 @@ ROOT = Path(__file__).resolve().parents[1]
 class PluginHubDisplayNames(unittest.TestCase):
     def test_ribbon_and_manager_labels(self):
         setup = (ROOT / "framework/setup.cpp").read_text(encoding="utf-8")
-        self.assertIn(r'text=\\\"扩展工具\\\"', setup)
+        self.assertIn('text=' + chr(92) + '"扩展工具' + chr(92) + '"', setup)
         self.assertIn("<Ribbon>插件管理</Ribbon><Menu>插件管理</Menu>", setup)
         self.assertIn('L"扩展工具管理器"', setup)
         self.assertIn('在“扩展工具”功能区使用', setup)
-        self.assertIn('name=\\\"ZwPluginHubPage\\\"', setup)
-        self.assertIn('name=\\\"ID_ZpHub_ZwPluginHubManage\\\"', setup)
+        self.assertIn('name=' + chr(92) + '"ZwPluginHubPage' + chr(92) + '"', setup)
+        self.assertIn('name=' + chr(92) + '"ID_ZpHub_ZwPluginHubManage' + chr(92) + '"', setup)
 
     def test_launch_feedback_labels(self):
         hub = (ROOT / "framework/ZwPluginHub.cpp").read_text(encoding="utf-8")
