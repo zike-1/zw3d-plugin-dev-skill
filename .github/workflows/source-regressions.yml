@@ -21,6 +21,15 @@ jobs:
         run: python -m unittest discover -s tests -p test_kit_source_sync.py -v
       - name: Check visible UI labels and stable internal names
         run: python -m unittest discover -s tests -p test_ui_labels.py -v
+      - name: Exercise isolated release packager tests
+        run: python -m unittest discover -s release -p test_pack_skill.py -v
+      - name: Rebuild accepted v0.2.4 ZIP and compare SHA256
+        shell: pwsh
+        run: |
+          python release/pack_skill.py
+          $expected = 'c1b004a76d80aa22ace1d80417037915a1a7a6a066de509a9163eea5351d7aeb'
+          $actual = (Get-FileHash release/zw3d-plugin-dev-0.2.4.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "Release ZIP differs: $actual (expected $expected)" }
       - name: Run existing source-only regression tests
         run: |
           python -m unittest discover -s templates/tests -v
