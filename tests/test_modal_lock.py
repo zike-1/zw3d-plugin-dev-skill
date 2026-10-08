@@ -17,6 +17,14 @@ import time
 def find_notice(pid):
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     callback_type = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+    user32.GetWindowThreadProcessId.argtypes = (ctypes.c_void_p, ctypes.POINTER(ctypes.c_ulong))
+    user32.GetWindowThreadProcessId.restype = ctypes.c_ulong
+    user32.GetClassNameW.argtypes = (ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_int)
+    user32.GetClassNameW.restype = ctypes.c_int
+    user32.GetWindowTextW.argtypes = (ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_int)
+    user32.GetWindowTextW.restype = ctypes.c_int
+    user32.EnumWindows.argtypes = (callback_type, ctypes.c_void_p)
+    user32.EnumWindows.restype = ctypes.c_bool
     found = []
     def each(hwnd, _):
         owner = ctypes.c_ulong()
@@ -70,7 +78,9 @@ def main():
             print("PASS: another installation completes with first result dialog open")
         finally:
             if notice:
-                ctypes.WinDLL("user32").PostMessageW(notice, 0x0010, 0, 0)  # WM_CLOSE
+                user32 = ctypes.WinDLL("user32", use_last_error=True)
+                user32.PostMessageW.argtypes = (ctypes.c_void_p, ctypes.c_uint, ctypes.c_size_t, ctypes.c_ssize_t)
+                user32.PostMessageW(notice, 0x0010, 0, 0)  # WM_CLOSE
             try:
                 child.wait(timeout=5)
             except subprocess.TimeoutExpired:
