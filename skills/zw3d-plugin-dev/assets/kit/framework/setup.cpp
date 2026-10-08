@@ -34,7 +34,7 @@ static bool statusIsError = false;
 static bool deferStatus = false;
 static void showStatus() {
     if (!quiet && !status.empty())
-        MessageBoxW(window, wide(status).c_str(), L"小插件工具箱",
+        MessageBoxW(window, wide(status).c_str(), L"扩展工具",
                     MB_OK | (statusIsError ? MB_ICONERROR : MB_ICONINFORMATION));
 }
 static void result(const std::string& text) {
@@ -179,11 +179,11 @@ static void menus(Transaction& tx, std::vector<Fields> plugins) {
     });
     Bytes actions = "<Actions name=\"ZW3D\" version=\"1700\" system=\"false\"><Action "
                     "name=\"ID_ZpHub_ZwPluginHubManage\" "
-                    "type=\"button\"><Text><Ribbon>管理插件</Ribbon><Menu>管理插件</Menu></"
+                    "type=\"button\"><Text><Ribbon>插件管理</Ribbon><Menu>插件管理</Menu></"
                     "Text><Icon>~ZpHub_ZwPluginHubManage</Icon><Hint>查看、更新和卸载插件</Hint>"
                     "<Script>~ZwPluginHubManage</Script></Action>";
     tx.put(iconRel("ZwPluginHubManage"), resource(903));
-    Bytes page = "<RibbonPages><RibbonPage name=\"ZwPluginHubPage\" text=\"小插件\" "
+    Bytes page = "<RibbonPages><RibbonPage name=\"ZwPluginHubPage\" text=\"扩展工具\" "
                  "visible=\"true\"><RibbonGroup name=\"HubManagementGroup\" text=\"插件管理\" "
                  "visible=\"true\"><GroupPanel "
                  "name=\"HubManagementCommands\"><Control action=\"ID_ZpHub_ZwPluginHubManage\" "
@@ -521,7 +521,7 @@ static void installEmbedded() {
         applyFramework();
         installNow(f, index, blobs, true);
         discardPending(f.at("id"));
-        result("安装完成。重新打开2027，在“小插件”功能区使用。");
+        result("安装完成。重新打开2027，在“扩展工具”功能区使用。");
     } else {
         bool upgrade = frameworkNeedsUpdate();
         require(!upgrade || !fs::exists(target / L"apilibs" / L"ZwPluginHub.dll") ||
@@ -833,7 +833,7 @@ static int gui(const std::string& uiProbe) {
     cls.hIcon = LoadIconW(cls.hInstance, MAKEINTRESOURCEW(101));
     cls.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     RegisterClassW(&cls);
-    window = CreateWindowW(cls.lpszClassName, L"小插件工具箱 — 安装与管理", WS_OVERLAPPEDWINDOW,
+    window = CreateWindowW(cls.lpszClassName, L"扩展工具管理器", WS_OVERLAPPEDWINDOW,
                            CW_USEDEFAULT, CW_USEDEFAULT, MulDiv(850, uiDpi, 96), MulDiv(490, uiDpi, 96), nullptr, nullptr, cls.hInstance,
                            nullptr);
     auto smallIcon = LoadImageW(cls.hInstance, MAKEINTRESOURCEW(101), IMAGE_ICON,
