@@ -21,26 +21,58 @@ SYSTEM_LIBRARIES = ["-lcomctl32", "-lshell32", "-lole32", "-loleaut32", "-ladvap
                     "-lshlwapi", "-lbcrypt", "-lversion", "-luuid", "-luser32", "-lgdi32", "-lcomdlg32"]
 
 
-def run(arguments: list[str], cwd: Path) -> None:
-    result = subprocess.run(arguments, cwd=cwd, text=True, encoding="utf-8", errors="replace",
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+def run(arguments: list[str], cwd: Path, env: dict[str, str] | None = None) -> None:
+    result = subprocess.run(arguments, cwd=cwd, env=env, text=True, encoding="utf-8",
+                            errors="replace", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if result.returncode:
         raise PackageError(f"command failed ({result.returncode}): {' '.join(arguments)}\n{result.stdout}")
 
 
-def compiler_settings(toolchain: Path, stage: Path) -> tuple[str, str, list[str]]:
+def toolchain_environment(toolchain: Path) -> dict[str, str]:
+    """Prefer the selected MinGW runtime for every compiler and windres child process."""
+    binary_dir = toolchain / "bin"
+    require(all((binary_dir / executable).is_file()
+                for executable in ("g++.exe", "gcc.exe", "windres.exe")),
+            f"MinGW x64 g++/gcc/windres missing from {binary_dir}")
+    env = os.environ.copy()
+    env["PATH"] = str(binary_dir) + os.pathsep + env.get("PATH", "")
+    return env
+
+
+def tool_probe(arguments: list[str], env: dict[str, str], *, input_text: str | None = None) -> str:
+    """Diagnose missing cc1/runtime DLLs before windres masks the failure."""
+    try:
+        result = subprocess.run(arguments, env=env, input=input_text, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                                errors="replace", timeout=30)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise PackageError(f"MinGW toolchain cannot start {' '.join(arguments)}: {error}") from error
+    if result.returncode:
+        code = result.returncode & 0xffffffff
+        hint = (" (0xC0000135: required MinGW runtime DLL not found; check the selected "
+                "toolchain/bin directory)" if code == 0xC0000135 else "")
+        raise PackageError(f"MinGW probe failed ({result.returncode}){hint}: "
+                           f"{' '.join(arguments)}\n{result.stdout}")
+    return result.stdout
+
+
+def compiler_settings(toolchain: Path, stage: Path) -> tuple[str, str, list[str], dict[str, str]]:
     compiler = toolchain / "bin" / "g++.exe"
     resource = toolchain / "bin" / "windres.exe"
-    require(compiler.is_file() and resource.is_file(), "MinGW g++/windres not found")
+    env = toolchain_environment(toolchain)
+    target = tool_probe([str(compiler), "-dumpmachine"], env).strip().lower()
+    require(target.startswith("x86_64") or target.startswith("amd64"),
+            f"Expected x64 MinGW target; compiler reports {target!r}")
+    tool_probe([str(resource), "--version"], env)
+    tool_probe([str(compiler), "-x", "c++", "-E", "-"], env, input_text="int zwplug_probe;\n")
     # MinGW embeds a default manifest unless removed. Supply our own asInvoker manifest.
-    dump = subprocess.run([str(compiler), "-dumpspecs"], check=True, stdout=subprocess.PIPE,
-                          text=True, encoding="utf-8").stdout
+    dump = tool_probe([str(compiler), "-dumpspecs"], env)
     specs = stage / "compiler.specs"
     specs.write_text(dump.replace("default-manifest.o%s", ""), encoding="utf-8")
     flags = ["-std=c++17", "-O2", "-Wall", "-Wextra", "-m64", "-finput-charset=UTF-8",
              "-fexec-charset=UTF-8", "-municode", "-DUNICODE", "-D_UNICODE",
              "-static", "-static-libgcc", "-static-libstdc++", "-Wl,--no-insert-timestamp", f"-specs={specs}"]
-    return str(compiler), str(resource), flags
+    return str(compiler), str(resource), flags, env
 
 
 def static_runtime(binary: Path) -> None:
@@ -78,7 +110,7 @@ def primary_icon(manifest: dict, files: dict[str, bytes]) -> bytes:
 
 def compile_source(source: Path, output: Path, kind: str, sdk: Path, compiler: str,
                    flags: list[str], stage: Path, extra: list[str] | None = None,
-                   app_icon: bytes | None = None) -> None:
+                   app_icon: bytes | None = None, env: dict[str, str] | None = None) -> None:
     local_source = stage / (output.stem + "_src")
     shutil.copytree(source, local_source)
     sources = sorted(local_source.rglob("*.cpp"))
@@ -94,7 +126,7 @@ def compile_source(source: Path, output: Path, kind: str, sdk: Path, compiler: s
     arguments += (extra or []) + SYSTEM_LIBRARIES + ["-o", str(output)]
     for index, rc in enumerate(sorted(local_source.rglob("*.rc"))):
         obj = stage / (output.stem + f"_resource_{index}.o")
-        run([str(Path(compiler).with_name("windres.exe")), "-I", str(rc.parent), "-i", str(rc), "-o", str(obj)], rc.parent)
+        run([str(Path(compiler).with_name("windres.exe")), "-I", str(rc.parent), "-i", str(rc), "-o", str(obj)], rc.parent, env=env)
         arguments.append(str(obj))
     if app_icon is not None:
         icon = stage / (output.stem + '-app.ico')
@@ -102,13 +134,14 @@ def compile_source(source: Path, output: Path, kind: str, sdk: Path, compiler: s
         rc = stage / (output.stem + '-app.rc')
         rc.write_text(f'101 ICON "{icon.name}"\n', encoding='utf-8')
         obj = stage / (output.stem + '-app.o')
-        run([str(Path(compiler).with_name('windres.exe')), '-i', str(rc), '-o', str(obj)], stage)
+        run([str(Path(compiler).with_name('windres.exe')), '-i', str(rc), '-o', str(obj)], stage, env=env)
         arguments.append(str(obj))
-    run(arguments, stage)
+    run(arguments, stage, env=env)
     static_runtime(output)
 
 
-def build_framework(sdk: Path, compiler: str, flags: list[str], stage: Path) -> tuple[Path, Path]:
+def build_framework(sdk: Path, compiler: str, flags: list[str], stage: Path,
+                    env: dict[str, str] | None = None) -> tuple[Path, Path]:
     require((ROOT / "framework" / "ZwPluginHub.cpp").is_file(), "shared hub framework is not ready")
     framework = stage / "framework"
     shutil.copytree(ROOT / "framework", framework)
@@ -116,14 +149,14 @@ def build_framework(sdk: Path, compiler: str, flags: list[str], stage: Path) -> 
     manager = stage / "HubManager.exe"
     run([compiler, *flags, "-shared", "-I" + str(sdk / "api" / "inc"),
          str(framework / "ZwPluginHub.cpp"), str(sdk / "ZW3D.lib"),
-         *SYSTEM_LIBRARIES, "-o", str(hub)], stage)
+         *SYSTEM_LIBRARIES, "-o", str(hub)], stage, env=env)
     (stage / "default-icon.bin").write_bytes((ROOT / "framework" / "default-icon.png").read_bytes())
     (stage / "manager.manifest").write_text(application_manifest(), encoding="utf-8")
     (stage / 'manager.ico').write_bytes(application_icon((ROOT / 'framework/default-icon.png').read_bytes()))
     (stage / "manager.rc").write_text('#include <windows.h>\n1 RT_MANIFEST "manager.manifest"\n101 ICON "manager.ico"\n903 RCDATA "default-icon.bin"\n', encoding="utf-8")
-    run([str(Path(compiler).with_name("windres.exe")), "-i", "manager.rc", "-o", "manager-resource.o"], stage)
+    run([str(Path(compiler).with_name("windres.exe")), "-i", "manager.rc", "-o", "manager-resource.o"], stage, env=env)
     run([compiler, *flags, "-mwindows", "-DHUB_MANAGER", str(framework / "setup.cpp"), str(stage / "manager-resource.o"),
-         *SYSTEM_LIBRARIES, "-o", str(manager)], stage)
+         *SYSTEM_LIBRARIES, "-o", str(manager)], stage, env=env)
     static_runtime(hub)
     static_runtime(manager)
     return hub, manager
@@ -216,7 +249,7 @@ def build(project: Path, sdk: Path, toolchain: Path, output: Path,
     with tempfile.TemporaryDirectory(prefix="zwplug_build_") as temporary:
         stage = Path(temporary)
         require(str(stage).isascii(), "set TEMP/TMP to an ASCII directory for this compiler")
-        compiler, resource_compiler, flags = compiler_settings(toolchain, stage)
+        compiler, resource_compiler, flags, build_env = compiler_settings(toolchain, stage)
         payload = stage / "payload"
         if (project / "payload").exists():
             read_payload(project / "payload")  # Reject symlinks before copying.
@@ -228,7 +261,8 @@ def build(project: Path, sdk: Path, toolchain: Path, output: Path,
         if (project / "src").is_dir():
             compile_source(project / "src", primary, manifest["type"], sdk,
                            compiler, flags, stage,
-                           app_icon=primary_icon(manifest, read_payload(payload)) if manifest['type'] == 'exe' else None)
+                           app_icon=primary_icon(manifest, read_payload(payload)) if manifest['type'] == 'exe' else None,
+                           env=build_env)
         else:
             require(primary.is_file(), "project needs src/*.cpp or a prebuilt payload entry")
         files = read_payload(payload)
@@ -245,7 +279,7 @@ def build(project: Path, sdk: Path, toolchain: Path, output: Path,
                                       filename + "-build.json": None})
             return {"status": "PASS", "package": str(package.resolve()), "packageValidation": package_report}
         if compile_framework:
-            hub, manager = build_framework(sdk, compiler, flags, stage)
+            hub, manager = build_framework(sdk, compiler, flags, stage, env=build_env)
         else:
             framework_bin = framework_bin or DEFAULT_RUNTIME
             hub = framework_bin / "ZwPluginHub.dll"
@@ -261,12 +295,12 @@ def build(project: Path, sdk: Path, toolchain: Path, output: Path,
             static_runtime(manager)
         rc = installer_resources(manifest, files, hub, manager, stage)
         resource_object = stage / "resources.o"
-        run([resource_compiler, "-i", str(rc), "-o", str(resource_object)], stage)
+        run([resource_compiler, "-i", str(rc), "-o", str(resource_object)], stage, env=build_env)
         framework = stage / "installer"
         shutil.copytree(ROOT / "framework", framework)
         executable = stage / "Setup.exe"
         run([compiler, *flags, "-mwindows", str(framework / "setup.cpp"), str(resource_object),
-             *SYSTEM_LIBRARIES, "-o", str(executable)], stage)
+             *SYSTEM_LIBRARIES, "-o", str(executable)], stage, env=build_env)
         static_runtime(executable)
         destination = output / (filename + "-setup.exe")
         # Retain exact frozen plugin binaries for debugging without the SDK.
