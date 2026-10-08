@@ -42,7 +42,7 @@ python -X utf8 tools/build_plugin.py work/art-demo --sdk "你的2027安装目录
 python -X utf8 tools/validate_package.py dist/org.example.art-demo-1.0.0.zwplug --sdk "你的2027安装目录"
 ```
 
-示例身份必须换成团队自己的稳定ID与前缀。生成项目后实现业务功能，再构建。打包器默认复用`runtime/1.1.3/`的冻结框架；`--build-framework`只供框架维护者使用。不要各自重新编译同名框架版本再混装。
+示例身份必须换成团队自己的稳定ID与前缀。生成项目后实现业务功能，再构建。打包器默认复用`runtime/1.1.4/`的冻结框架；`--build-framework`只供框架维护者使用。不要各自重新编译同名框架版本再混装。
 
 ## 项目结构
 
@@ -53,7 +53,7 @@ python -X utf8 tools/validate_package.py dist/org.example.art-demo-1.0.0.zwplug 
 | examples | 一个不修改模型的DLL问候插件和一个EXE便签工具 |
 | tools | 校验清单、PE架构与依赖，打包并生成独立安装EXE |
 | framework | 通用加载、菜单、数据目录、安装事务和管理器 |
-| runtime/1.1.3 | 所有作者复用的自编框架DLL与管理器，附SHA256 |
+| runtime/1.1.4 | 所有作者复用的自编框架DLL与管理器，附SHA256 |
 | tests | 合同、真实安装器、故障恢复与SDK宿主测试 |
 | release | 组装技能和公开发行包的脚本；生成的ZIP从Release下载 |
 
