@@ -30,15 +30,22 @@ static Bytes resource(int id) {
     return Bytes(p, n);
 }
 static std::string status;
+static bool statusIsError = false;
+static bool deferStatus = false;
+static void showStatus() {
+    if (!quiet && !status.empty())
+        MessageBoxW(window, wide(status).c_str(), L"小插件工具箱",
+                    MB_OK | (statusIsError ? MB_ICONERROR : MB_ICONINFORMATION));
+}
 static void result(const std::string& text) {
     status = text;
-    if (!quiet)
-        MessageBoxW(window, wide(text).c_str(), L"小插件工具箱", MB_OK | MB_ICONINFORMATION);
+    statusIsError = false;
+    if (!deferStatus) showStatus();
 }
 static void error(const std::string& text) {
     status = "失败：" + text;
-    if (!quiet)
-        MessageBoxW(window, wide(status).c_str(), L"小插件工具箱", MB_OK | MB_ICONERROR);
+    statusIsError = true;
+    if (!deferStatus) showStatus();
 }
 struct FileItem {
     std::string path, hash;
@@ -641,16 +648,22 @@ static void useTarget() {
     validateTarget(target);
 }
 static void runOperation(const std::function<void()>& body) {
+    status.clear();
+    deferStatus = true;
     try {
         useTarget();
-        Lock lock;
-        Transaction(target, startupContext).restore();
-        body();
-        refresh();
+        {
+            Lock lock;
+            Transaction(target, startupContext).restore();
+            body();
+            refresh();
+        }  // Release the installation mutex before showing an outcome dialog.
     } catch (const std::exception& e) {
         error(e.what());
         try { refresh(); } catch (...) {}
     }
+    deferStatus = false;
+    showStatus();
 }
 static void cancelId(const std::string& id) {
     require(safeId(id), "Invalid plugin ID");
@@ -952,6 +965,9 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
     LocalFree(argv);
     startupContext = startup;
     int code = 0;
+    // /install, /cancel, /uninstall and maintenance commands must finish their
+    // transaction and release Lock before showing an elevated result dialog.
+    deferStatus = !op.empty();
     try {
         if (target.empty()) {
             auto found = detect();
@@ -993,5 +1009,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
         } catch (...) {
             code = 2;
         }
+    deferStatus = false;
+    if (!op.empty()) showStatus();  // All Lock instances above have gone out of scope.
     return code;
 }
