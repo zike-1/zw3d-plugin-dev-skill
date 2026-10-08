@@ -19,6 +19,8 @@ jobs:
         run: python -m unittest discover -s tests -p test_build_environment.py -v
       - name: Verify bundled skill kit integrity
         run: python -m unittest discover -s tests -p test_kit_source_sync.py -v
+      - name: Check visible UI labels and stable internal names
+        run: python -m unittest discover -s tests -p test_ui_labels.py -v
       - name: Run existing source-only regression tests
         run: |
           python -m unittest discover -s templates/tests -v
