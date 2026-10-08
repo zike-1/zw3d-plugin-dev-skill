@@ -17,7 +17,7 @@ import zipfile
 
 PROJECT = Path(__file__).resolve().parents[1]
 SKILL_NAME = "zw3d-plugin-dev"
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 OWNER = "zw3d-plugin-dev-skill.release.pack_skill"
 MARKER = ".kit-owner.json"
 HASHES = "kit-sha256.json"
