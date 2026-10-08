@@ -35,7 +35,7 @@ def find_notice(pid):
         title = ctypes.create_unicode_buffer(256)
         user32.GetClassNameW(hwnd, cls, 256)
         user32.GetWindowTextW(hwnd, title, 256)
-        if cls.value == "#32770" and title.value == "小插件工具箱":
+        if cls.value == "#32770" and title.value == "扩展工具":
             found.append(hwnd)
         return True
     user32.EnumWindows(callback_type(each), None)
