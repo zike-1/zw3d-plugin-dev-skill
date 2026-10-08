@@ -23,3 +23,16 @@ jobs:
         run: |
           python -m unittest discover -s templates/tests -v
           python -m unittest discover -s tests -p test_release_guards.py -v
+
+  native-manager-syntax:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: mingw-w64-x86_64-gcc
+      - name: Check HubManager C++ source without proprietary SDK
+        shell: msys2 {0}
+        run: g++ -std=c++17 -DHUB_MANAGER -DUNICODE -D_UNICODE -fsyntax-only framework/setup.cpp
