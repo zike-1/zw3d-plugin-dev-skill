@@ -15,8 +15,8 @@ from package_lib import (PE, PackageError, build_package, canonical_json, descri
                          validate_package, required_apis, validate_icon)
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_RUNTIME = ROOT / "runtime" / "1.1.3"
-FRAMEWORK_VERSION = "1.1.3"
+DEFAULT_RUNTIME = ROOT / "runtime" / "1.1.4"
+FRAMEWORK_VERSION = "1.1.4"
 SYSTEM_LIBRARIES = ["-lcomctl32", "-lshell32", "-lole32", "-loleaut32", "-ladvapi32",
                     "-lshlwapi", "-lbcrypt", "-lversion", "-luuid", "-luser32", "-lgdi32", "-lcomdlg32"]
 
@@ -335,7 +335,7 @@ def main() -> int:
     parser.add_argument("--out", type=Path, default=ROOT / "dist")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--build-framework", action="store_true", help="Framework maintainers only: compile a new runtime")
-    group.add_argument("--framework-bin", type=Path, help="Test override; default is the fixed runtime/1.1.3 release")
+    group.add_argument("--framework-bin", type=Path, help="Test override; default is the fixed runtime/1.1.4 release")
     group.add_argument("--package-only", action="store_true", help="Compile and validate the plugin without an installer")
     args = parser.parse_args()
     try:
