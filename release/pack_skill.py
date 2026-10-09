@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import io
 import json
@@ -18,6 +19,7 @@ import zipfile
 PROJECT = Path(__file__).resolve().parents[1]
 SKILL_NAME = "zw3d-plugin-dev"
 VERSION = "0.2.4"
+DEVELOPMENT_VERSION = "0.2.5-dev"
 OWNER = "zw3d-plugin-dev-skill.release.pack_skill"
 MARKER = ".kit-owner.json"
 HASHES = "kit-sha256.json"
@@ -146,6 +148,17 @@ def kit_files(root: Path) -> dict[str, bytes]:
         require(isinstance(checksum, str) and re.fullmatch(r"[0-9a-f]{64}", checksum) is not None
                 and digest(runtime[name]) == checksum, f"Frozen runtime was modified: {name}")
     result.update({f"runtime/1.1.4/{name}": data for name, data in runtime.items()})
+    # Separate installer template; never add it to or rebuild the frozen hub.
+    installer = files_in(root, root / "installer-runtime" / "1.0.0")
+    require(set(installer) == {"SetupTemplate.exe", "checksums.json"},
+            "installer-runtime/1.0.0 must contain only the template and checksums.json")
+    installer["checksums.json"] = lf_text(installer["checksums.json"])
+    table = read_json(installer["checksums.json"])
+    require(isinstance(table, dict) and set(table) == {"SetupTemplate.exe"} and
+            isinstance(table["SetupTemplate.exe"], str) and
+            digest(installer["SetupTemplate.exe"]) == table["SetupTemplate.exe"],
+            "Frozen installer template was modified")
+    result.update({f"installer-runtime/1.0.0/{name}": data for name, data in installer.items()})
     result[MARKER] = json_bytes(IDENTITY)
     result[HASHES] = json_bytes({"schemaVersion": 1, "files": {name: digest(data) for name, data in sorted(result.items())}})
     return result
@@ -225,8 +238,10 @@ def archive_bytes(files: dict[str, bytes]) -> bytes:
     return output.getvalue()
 
 
-def assemble(root: Path = PROJECT) -> dict:
+def assemble(root: Path = PROJECT, *, version: str = DEVELOPMENT_VERSION) -> dict:
     root = contained(PROJECT, root)
+    require(version == DEVELOPMENT_VERSION,
+            "This development branch only assembles 0.2.5-dev; use the release tag to rebuild historical ZIPs")
     kit = kit_files(root)  # Validate everything before changing a previous release.
     archive = archive_bytes(skill_files(root, kit))
     assets = contained(root, root / "skills" / SKILL_NAME / "assets")
@@ -236,8 +251,8 @@ def assemble(root: Path = PROJECT) -> dict:
         verify_owned(root, destination)
     release = contained(root, root / "release")
     release.mkdir(exist_ok=True)
-    artifact = contained(root, release / f"{SKILL_NAME}-{VERSION}.zip")
-    record = contained(root, release / f"{SKILL_NAME}-{VERSION}.release.json")
+    artifact = contained(root, release / f"{SKILL_NAME}-{version}.zip")
+    record = contained(root, release / f"{SKILL_NAME}-{version}.release.json")
     old_archive = artifact.read_bytes() if artifact.exists() else None
     old_record = record.read_bytes() if record.exists() else None
     require((old_archive is None) == (old_record is None), "Unknown or incomplete prior release; refusing to overwrite it")
@@ -246,7 +261,7 @@ def assemble(root: Path = PROJECT) -> dict:
         require(isinstance(previous, dict) and previous.get("owner") == OWNER
                 and previous.get("artifact") == {"file": artifact.name, "sha256": digest(old_archive)},
                 "Prior release ownership or checksum does not match")
-    new_record = json_bytes({**IDENTITY, "version": VERSION,
+    new_record = json_bytes({**IDENTITY, "version": version,
                             "artifact": {"file": artifact.name, "sha256": digest(archive)},
                             "kitManifestSha256": digest(kit[HASHES])})
     stage = contained(root, Path(tempfile.mkdtemp(prefix=".kit-stage-", dir=assets)))
@@ -289,6 +304,9 @@ def assemble(root: Path = PROJECT) -> dict:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--development", action="store_true", help="Assemble the 0.2.5-dev candidate, not a release")
+    parser.parse_args()
     try:
         print(json.dumps(assemble(), ensure_ascii=False, indent=2))
         return 0

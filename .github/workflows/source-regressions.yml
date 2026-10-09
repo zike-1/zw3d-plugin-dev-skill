@@ -17,19 +17,30 @@ jobs:
         run: python -m compileall -q tools templates release tests
       - name: Run isolated build environment tests
         run: python -m unittest discover -s tests -p test_build_environment.py -v
+      - name: Run prebuilt plugin packaging regressions
+        run: python -m unittest discover -s tests -p test_package_existing.py -v
+      - name: Assemble development skill kit (preserve published v0.2.4)
+        run: python release/pack_skill.py --development
       - name: Verify bundled skill kit integrity
         run: python -m unittest discover -s tests -p test_kit_source_sync.py -v
       - name: Check visible UI labels and stable internal names
         run: python -m unittest discover -s tests -p test_ui_labels.py -v
       - name: Exercise isolated release packager tests
         run: python -m unittest discover -s release -p test_pack_skill.py -v
-      - name: Rebuild accepted v0.2.4 ZIP and compare SHA256
+      - name: Check development-branch skill assembly is reproducible (not a release)
+        if: github.event_name == 'pull_request'
         shell: pwsh
         run: |
-          python release/pack_skill.py
-          $expected = 'c1b004a76d80aa22ace1d80417037915a1a7a6a066de509a9163eea5351d7aeb'
-          $actual = (Get-FileHash release/zw3d-plugin-dev-0.2.4.zip -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($actual -ne $expected) { throw "Release ZIP differs: $actual (expected $expected)" }
+          python release/pack_skill.py --development
+          $first = (Get-FileHash release/zw3d-plugin-dev-0.2.5-dev.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          python release/pack_skill.py --development
+          $second = (Get-FileHash release/zw3d-plugin-dev-0.2.5-dev.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($first -ne $second) { throw "Development skill assembly is not reproducible" }
+      - name: Retain development candidate for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: zw3d-plugin-dev-0.2.5-dev
+          path: release/zw3d-plugin-dev-0.2.5-dev.zip
       - name: Run existing source-only regression tests
         run: |
           python -m unittest discover -s templates/tests -v

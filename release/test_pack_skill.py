@@ -29,6 +29,9 @@ class ReleaseAssemblyTests(unittest.TestCase):
         checksums = {name: pack_skill.digest((runtime / name).read_bytes())
                      for name in ("ZwPluginHub.dll", "HubManager.exe")}
         self.put("runtime/1.1.4/checksums.json", pack_skill.json_bytes(checksums))
+        self.put("installer-runtime/1.0.0/SetupTemplate.exe", b"synthetic installer template")
+        self.put("installer-runtime/1.0.0/checksums.json", pack_skill.json_bytes({
+            "SetupTemplate.exe": pack_skill.digest(b"synthetic installer template")}))
         skill = f"skills/{pack_skill.SKILL_NAME}"
         self.put(f"{skill}/SKILL.md", b"---\nname: zw3d-plugin-dev\ndescription: fixture\n---\n")
         self.put(f"{skill}/references/contract.md", b"fixture contract\n")
@@ -69,6 +72,23 @@ class ReleaseAssemblyTests(unittest.TestCase):
             self.assertEqual(len(names), len(set(name.casefold() for name in names)))
         self.assertEqual(pack_skill.assemble(self.root)["sha256"], first["sha256"])
         self.assertEqual(artifact.read_bytes(), original)
+
+    def test_development_candidate_preserves_historical_release(self):
+        old = self.root / "release/zw3d-plugin-dev-0.2.4.zip"
+        self.put("release/zw3d-plugin-dev-0.2.4.zip", b"historical release")
+        result = pack_skill.assemble(self.root)
+        self.assertEqual(old.read_bytes(), b"historical release")
+        self.assertTrue(result["artifact"].endswith("0.2.5-dev.zip"))
+        with self.assertRaisesRegex(ValueError, "release tag"):
+            pack_skill.assemble(self.root, version="0.2.4")
+
+    def test_corrupt_installer_template_changes_nothing(self):
+        first = pack_skill.assemble(self.root)
+        original = Path(first["artifact"]).read_bytes()
+        self.put("installer-runtime/1.0.0/SetupTemplate.exe", b"modified")
+        with self.assertRaisesRegex(ValueError, "installer template was modified"):
+            pack_skill.assemble(self.root)
+        self.assertEqual(Path(first["artifact"]).read_bytes(), original)
 
     def test_crlf_text_is_normalized_before_hashes_and_zip(self):
         # Binary CRLF bytes deliberately remain raw. Only UTF-8 text gets Git's LF representation.
@@ -154,7 +174,7 @@ class ReleaseAssemblyTests(unittest.TestCase):
             pack_skill.assemble(self.root)
 
     def test_unknown_zip_is_preserved(self):
-        artifact = self.root / "release" / f"{pack_skill.SKILL_NAME}-{pack_skill.VERSION}.zip"
+        artifact = self.root / "release" / f"{pack_skill.SKILL_NAME}-{pack_skill.DEVELOPMENT_VERSION}.zip"
         self.put(artifact.relative_to(self.root).as_posix(), b"user archive\n")
         with self.assertRaisesRegex(ValueError, "Unknown or incomplete prior release"):
             pack_skill.assemble(self.root)
