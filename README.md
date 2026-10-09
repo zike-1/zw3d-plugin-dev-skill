@@ -46,6 +46,28 @@ python -X utf8 tools/validate_package.py dist/org.example.art-demo-1.0.0.zwplug 
 
 示例身份必须换成团队自己的稳定ID与前缀。生成项目后实现业务功能，再构建。打包器默认复用`runtime/1.1.4/`的冻结框架；`--build-framework`只供框架维护者使用。不要各自重新编译同名框架版本再混装。
 
+## 开发分支：复杂插件与预编译文件接入（尚未发布）
+
+针对「一个插件包含很多内部命令是否必需拆包」以及「已有编译产物为什么还要安装 MinGW」的问题，
+本开发分支新增了独立的预编译包创建器，详见 [复杂插件接入设计与真实宿主验收边界](docs/complex-plugin-integration-plan.md)。
+
+已具备合法的 DLL/EXE 二进制及匹配的 `plugin.json`、`payload/` 时，可以在**仓库源码模式**运行：
+
+```powershell
+python tools/package_existing.py work/my-prebuilt-plugin --out dist
+```
+
+该流程不调用编译器、不重新构建已有 DLL，SDK 可通过可选 `--sdk` 参数提供，用于额外 API 检查。
+**产出只有 `.zwplug`，不是可双击安装的 EXE；目前 HubManager 尚不能直接安装此包。**
+因此完整的独立安装 EXE 仍需使用现有的 Windows 构建路径。
+
+当前 32 条限制约束的是每个包在 Hub 清单中声明的功能区入口，而不是业务 DLL 内部的函数和子命令数量。
+复杂插件可以仅暴露一个主入口，由自身界面呈现多个内部操作；如果原插件自带顶层选项卡，
+其资源需要单独适配，不能认为载入 DLL 会自动迁移菜单。
+
+以上属于尚未发行的开发分支工作，不属于正式 v0.2.4 技能 ZIP。不得据此声称环境分层显示、
+任意旧 DLL 无修改导入或者完整原生 Ribbon 多级菜单已经完成。
+
 ## 项目结构
 
 | 目录 | 职责 |
