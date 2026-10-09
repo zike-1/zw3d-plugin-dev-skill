@@ -25,7 +25,17 @@ jobs:
         run: python -m unittest discover -s tests -p test_ui_labels.py -v
       - name: Exercise isolated release packager tests
         run: python -m unittest discover -s release -p test_pack_skill.py -v
+      - name: Check development-branch skill assembly is reproducible (not a release)
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        run: |
+          python release/pack_skill.py
+          $first = (Get-FileHash release/zw3d-plugin-dev-0.2.4.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          python release/pack_skill.py
+          $second = (Get-FileHash release/zw3d-plugin-dev-0.2.4.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($first -ne $second) { throw "Development skill assembly is not reproducible" }
       - name: Rebuild accepted v0.2.4 ZIP and compare SHA256
+        if: github.event_name != 'pull_request'
         shell: pwsh
         run: |
           python release/pack_skill.py
