@@ -36,7 +36,8 @@
 
 ## 开发一个新插件
 
-开发机器需要Windows x64、Python 3、MinGW-w64 x64工具链，以及2027安装中的SDK。普通使用者只双击安装EXE，不需要Python、SDK或编译器。
+使用内置构建器编译源码时需要Windows x64、Python 3、MinGW-w64 x64工具链，以及2027安装中的SDK。
+已有合法DLL/EXE的作者可以使用下文的免编译安装器流程，只需Windows和Python。普通使用者只双击安装EXE，不需要Python、SDK或编译器。
 
 ```powershell
 python -X utf8 templates/new_plugin.py --type dll --id org.example.art-demo --prefix ArtDemo --name "我的工具" --out work/art-demo
@@ -54,12 +55,17 @@ python -X utf8 tools/validate_package.py dist/org.example.art-demo-1.0.0.zwplug 
 已具备合法的 DLL/EXE 二进制及匹配的 `plugin.json`、`payload/` 时，可以在**仓库源码模式**运行：
 
 ```powershell
-python tools/package_existing.py work/my-prebuilt-plugin --out dist
+python -X utf8 tools/package_existing.py work/my-prebuilt-plugin --out dist --installer
 ```
 
-该流程不调用编译器、不重新构建已有 DLL，SDK 可通过可选 `--sdk` 参数提供，用于额外 API 检查。
-**产出只有 `.zwplug`，不是可双击安装的 EXE；目前 HubManager 尚不能直接安装此包。**
-因此完整的独立安装 EXE 仍需使用现有的 Windows 构建路径。
+该流程在Windows上仅需要Python，复用随附的预编译安装器模板与冻结框架，生成`.zwplug`和可双击安装的`-setup.exe`。
+不调用编译器，不重新构建或改写业务DLL/EXE，不要求MinGW；已有Zig/clang等业务编译环境可以继续使用。
+SDK通过可选`--sdk`提供，用于额外API检查；安装时仍会检查目标2027宿主及所需API。
+省略`--installer`只生成`.zwplug`；HubManager仍不直接导入裸包。任意旧DLL是否符合包契约、原模板命令及菜单适配仍须另行核对。
+
+本分支的完整候选技能包用`python release/pack_skill.py --development`组装，文件名为
+`release/zw3d-plugin-dev-0.2.5-dev.zip`，也可从本PR的Source regressions工作流产物下载。
+它包含新工具和安装器模板，不覆盖正式0.2.4技能ZIP或框架1.1.4。
 
 当前 32 条限制约束的是每个包在 Hub 清单中声明的功能区入口，而不是业务 DLL 内部的函数和子命令数量。
 复杂插件可以仅暴露一个主入口，由自身界面呈现多个内部操作；如果原插件自带顶层选项卡，

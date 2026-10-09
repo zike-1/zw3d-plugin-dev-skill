@@ -11,7 +11,9 @@ import pack_skill
 class KitSourceSyncTests(unittest.TestCase):
     def test_source_matches_bundled_kit(self):
         kit = ROOT / "skills" / "zw3d-plugin-dev" / "assets" / "kit"
-        for relative in ("tools/build_plugin.py", "framework/setup.cpp", "framework/ZwPluginHub.cpp"):
+        for relative in ("tools/build_plugin.py", "tools/package_existing.py", "tools/prebuilt_installer.py",
+                         "installer-runtime/1.0.0/SetupTemplate.exe", "installer-runtime/1.0.0/checksums.json",
+                         "framework/setup.cpp", "framework/ZwPluginHub.cpp"):
             with self.subTest(file=relative):
                 self.assertEqual((ROOT / relative).read_bytes(), (kit / relative).read_bytes())
 

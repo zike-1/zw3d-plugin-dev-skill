@@ -39,6 +39,7 @@
 
 ```powershell
 python tools/package_existing.py work/my-prebuilt-plugin --out dist
+python tools/package_existing.py work/my-prebuilt-plugin --out dist --installer
 python tools/validate_package.py dist/org.example.my-plugin-1.0.0.zwplug
 ```
 
@@ -49,10 +50,14 @@ python tools/validate_package.py dist/org.example.my-plugin-1.0.0.zwplug
 拒绝未满足依赖约束的插件、未经支持的私有 DLL、无效资源和 SDK 宿主二进制再分发。
 「不用重新编译业务文件」不代表「任意旧 DLL 可以无修改直接接入」。
 
-**重要：这个命令仅生成独立 `.zwplug`，不生成用户双击安装的 EXE。当前 HubManager 不能直接导入这个包。**
-最终安装交付仍要由现有 Windows 构建器生成安装 EXE。
-要真正免编译完成安装交付，需要后续单独开发并验收离线包导入/复用签名可信的通用安装器等方案；
-不得把目前包创建能力宣传为已经解决了安装器构建依赖。
+Windows上增加`--installer`即可同时生成用户双击安装的EXE，作者只需Python；省略该选项仍只生成`.zwplug`。
+实现复用独立冻结的`installer-runtime/1.0.0/SetupTemplate.exe`，通过Windows资源API写入清单、文件索引、业务文件、图标及原冻结框架。
+打包前校验模板和框架哈希，打包后核对全部资源及非资源代码字节，并用独立`inspect_installer.py`比对包内容。
+模板未签名；生成后如需签名，应由发行者另行完成，工具不保留或伪造旧签名。
+同版本已有包或安装器内容不一致时拒绝覆盖；在整套文件验证通过后事务式发布。
+业务DLL不会被加载、执行或重编；只有维护者构建安装器模板时才需要MinGW，普通作者不运行该维护工具。
+安装、升级和卸载继续使用原框架逻辑，安装器运行时仍核对真实目标宿主及API。
+HubManager仍不能直接导入裸`.zwplug`；此变更不是任意旧DLL、复杂Ribbon或按环境隐藏的自动适配。
 
 ## 对 68 命令插件的最小实证
 
@@ -65,5 +70,6 @@ python tools/validate_package.py dist/org.example.my-plugin-1.0.0.zwplug
 ## 交付与版本
 
 此开发分支不修改 `runtime/1.1.4` 二进制、不覆写 0.2.4 发布 ZIP，也不声称已通过真实 GUI 验收。
+候选技能组装输出为`zw3d-plugin-dev-0.2.5-dev.zip`，包含新打包器与冻结安装器模板。
 验证通过后如决定改变框架协议/UI，须单独升级框架版本，重新打包与发布技能，
 并证明旧插件的安装/卸载和版本兼容行为未发生回归。
