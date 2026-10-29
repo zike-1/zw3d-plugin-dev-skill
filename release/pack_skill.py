@@ -18,7 +18,7 @@ import zipfile
 
 PROJECT = Path(__file__).resolve().parents[1]
 SKILL_NAME = "zw3d-plugin-dev"
-VERSION = "0.2.4"
+VERSION = "0.2.5"
 DEVELOPMENT_VERSION = "0.2.5-dev"
 OWNER = "zw3d-plugin-dev-skill.release.pack_skill"
 MARKER = ".kit-owner.json"
@@ -222,6 +222,19 @@ def skill_files(root: Path, kit: dict[str, bytes]) -> dict[str, bytes]:
     entry = lf_text(contained(root, folder / "SKILL.md").read_bytes())
     source_bytes(root, "SKILL.md", entry)
     result["SKILL.md"] = entry
+    # A standalone distribution must carry the project and bundled runtime notices.
+    for name in ("LICENSE", "THIRD_PARTY_NOTICES.md", "licenses/sources.json"):
+        result[name] = lf_text(contained(root, root / name).read_bytes())
+    sources = read_json(result["licenses/sources.json"])
+    require(isinstance(sources, dict) and isinstance(sources.get("files"), dict),
+            "License source table is invalid")
+    for name, item in sources["files"].items():
+        require(isinstance(name, str) and Path(name).name == name and
+                isinstance(item, dict) and isinstance(item.get("sha256"), str),
+                "License source entry is invalid")
+        data = contained(root, root / "licenses" / name).read_bytes()
+        require(digest(data) == item["sha256"], f"License checksum differs: {name}")
+        result[f"licenses/{name}"] = data
     result.update({f"assets/kit/{name}": data for name, data in kit.items()})
     return result
 
@@ -238,10 +251,10 @@ def archive_bytes(files: dict[str, bytes]) -> bytes:
     return output.getvalue()
 
 
-def assemble(root: Path = PROJECT, *, version: str = DEVELOPMENT_VERSION) -> dict:
+def assemble(root: Path = PROJECT, *, version: str = VERSION) -> dict:
     root = contained(PROJECT, root)
-    require(version == DEVELOPMENT_VERSION,
-            "This development branch only assembles 0.2.5-dev; use the release tag to rebuild historical ZIPs")
+    require(version in (VERSION, DEVELOPMENT_VERSION),
+            "Use the matching release tag to rebuild historical ZIPs")
     kit = kit_files(root)  # Validate everything before changing a previous release.
     archive = archive_bytes(skill_files(root, kit))
     assets = contained(root, root / "skills" / SKILL_NAME / "assets")
@@ -306,9 +319,9 @@ def assemble(root: Path = PROJECT, *, version: str = DEVELOPMENT_VERSION) -> dic
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--development", action="store_true", help="Assemble the 0.2.5-dev candidate, not a release")
-    parser.parse_args()
+    args = parser.parse_args()
     try:
-        print(json.dumps(assemble(), ensure_ascii=False, indent=2))
+        print(json.dumps(assemble(version=DEVELOPMENT_VERSION if args.development else VERSION), ensure_ascii=False, indent=2))
         return 0
     except (OSError, UnicodeError, ValueError) as error:
         print(json.dumps({"status": "FAIL", "error": str(error)}, ensure_ascii=False))

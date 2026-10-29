@@ -4,11 +4,11 @@
 
 这个项目包含AI技能、DLL与EXE模板、包检查器、单插件安装器和共用工具箱。每个插件都独立交付一份EXE：第一次安装建立“扩展工具”功能区，后续安装自动加入这里。管理器可以分别卸载插件，普通卸载保留个人设置和日志；正在运行的宿主把变更记为“等待重启”。
 
-当前技能版本为**0.2.4**，共用框架版本为**1.1.4**，功能区名称为“扩展工具”。本轮在Windows x64与中望3D 2027 SDK环境下完成了构建修复、安装锁及隔离宿主的升级/界面检查；**尚未覆盖正式宿主GUI全流程验证**。0.2.3示例安装器继续保留其历史版本，不会因下载新版技能自动升级。`.zwplug`是本项目的包格式，不是中望官方格式。
+当前技能版本为**0.2.5**，共用框架版本为**1.1.4**，功能区名称为“扩展工具”。本版支持为已有合规DLL/EXE免编译生成安装器；隔离安装和自动化检查通过，**正式宿主GUI全流程与旧复杂插件适配尚未验收**。0.2.3示例安装器继续保留其历史版本，不会因下载新版技能自动升级。`.zwplug`是本项目的包格式，不是中望官方格式。
 
 ## 下载与安装
 
-**最新版技能：**从 [v0.2.4 发行页](https://github.com/zike-1/zw3d-plugin-dev-skill/releases/tag/v0.2.4) 下载 `zw3d-plugin-dev-0.2.4.zip`（Framework 1.1.4）；安装及打包方法见下文。
+**最新版技能：**从 [v0.2.5 发行页](https://github.com/zike-1/zw3d-plugin-dev-skill/releases/tag/v0.2.5) 下载 `zw3d-plugin-dev-0.2.5.zip`（Framework 1.1.4）；安装及打包方法见下文。
 
 **旧版演示安装器：**以下文件仍来自 [v0.2.3 历史发行页](https://github.com/zike-1/zw3d-plugin-dev-skill/releases/tag/v0.2.3)，内嵌 Framework 1.1.3，界面沿用旧名称：
 
@@ -47,10 +47,10 @@ python -X utf8 tools/validate_package.py dist/org.example.art-demo-1.0.0.zwplug 
 
 示例身份必须换成团队自己的稳定ID与前缀。生成项目后实现业务功能，再构建。打包器默认复用`runtime/1.1.4/`的冻结框架；`--build-framework`只供框架维护者使用。不要各自重新编译同名框架版本再混装。
 
-## 开发分支：复杂插件与预编译文件接入（尚未发布）
+## 已有插件免编译打包
 
 针对「一个插件包含很多内部命令是否必需拆包」以及「已有编译产物为什么还要安装 MinGW」的问题，
-本开发分支新增了独立的预编译包创建器，详见 [复杂插件接入设计与真实宿主验收边界](docs/complex-plugin-integration-plan.md)。
+本版提供预编译包创建器，详见 [复杂插件接入设计与真实宿主验收边界](docs/complex-plugin-integration-plan.md)。
 
 已具备合法的 DLL/EXE 二进制及匹配的 `plugin.json`、`payload/` 时，可以在**仓库源码模式**运行：
 
@@ -63,16 +63,14 @@ python -X utf8 tools/package_existing.py work/my-prebuilt-plugin --out dist --in
 SDK通过可选`--sdk`提供，用于额外API检查；安装时仍会检查目标2027宿主及所需API。
 省略`--installer`只生成`.zwplug`；HubManager仍不直接导入裸包。任意旧DLL是否符合包契约、原模板命令及菜单适配仍须另行核对。
 
-本分支的完整候选技能包用`python release/pack_skill.py --development`组装，文件名为
-`release/zw3d-plugin-dev-0.2.5-dev.zip`，也可从本PR的Source regressions工作流产物下载。
-它包含新工具和安装器模板，不覆盖正式0.2.4技能ZIP或框架1.1.4。
+维护者用`python release/pack_skill.py`组装正式技能包`release/zw3d-plugin-dev-0.2.5.zip`。
+它包含新工具和安装器模板，不覆盖历史0.2.4技能ZIP或框架1.1.4。
 
 当前 32 条限制约束的是每个包在 Hub 清单中声明的功能区入口，而不是业务 DLL 内部的函数和子命令数量。
 复杂插件可以仅暴露一个主入口，由自身界面呈现多个内部操作；如果原插件自带顶层选项卡，
 其资源需要单独适配，不能认为载入 DLL 会自动迁移菜单。
 
-以上属于尚未发行的开发分支工作，不属于正式 v0.2.4 技能 ZIP。不得据此声称环境分层显示、
-任意旧 DLL 无修改导入或者完整原生 Ribbon 多级菜单已经完成。
+本版尚不支持环境分层显示、任意旧 DLL 无修改导入或完整原生 Ribbon 多级菜单。
 
 ## 项目结构
 
