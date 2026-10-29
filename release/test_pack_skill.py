@@ -29,6 +29,14 @@ class ReleaseAssemblyTests(unittest.TestCase):
         checksums = {name: pack_skill.digest((runtime / name).read_bytes())
                      for name in ("ZwPluginHub.dll", "HubManager.exe")}
         self.put("runtime/1.1.4/checksums.json", pack_skill.json_bytes(checksums))
+        self.put("installer-runtime/1.0.0/SetupTemplate.exe", b"synthetic installer template")
+        self.put("installer-runtime/1.0.0/checksums.json", pack_skill.json_bytes({
+            "SetupTemplate.exe": pack_skill.digest(b"synthetic installer template")}))
+        self.put("LICENSE", b"fixture project license\n")
+        self.put("THIRD_PARTY_NOTICES.md", b"fixture third-party notices\n")
+        self.put("licenses/fixture.txt", b"fixture runtime license\n")
+        self.put("licenses/sources.json", pack_skill.json_bytes({"files": {
+            "fixture.txt": {"sha256": pack_skill.digest(b"fixture runtime license\n")}}}))
         skill = f"skills/{pack_skill.SKILL_NAME}"
         self.put(f"{skill}/SKILL.md", b"---\nname: zw3d-plugin-dev\ndescription: fixture\n---\n")
         self.put(f"{skill}/references/contract.md", b"fixture contract\n")
@@ -64,11 +72,40 @@ class ReleaseAssemblyTests(unittest.TestCase):
             names = archive.namelist()
             self.assertIn("zw3d-plugin-dev/SKILL.md", names)
             self.assertIn("zw3d-plugin-dev/assets/kit/runtime/1.1.4/HubManager.exe", names)
+            self.assertIn("zw3d-plugin-dev/LICENSE", names)
+            self.assertIn("zw3d-plugin-dev/THIRD_PARTY_NOTICES.md", names)
+            self.assertIn("zw3d-plugin-dev/licenses/fixture.txt", names)
             self.assertFalse(any(".env" in name or "__pycache__" in name or "/logs/" in name for name in names))
             self.assertTrue(all(item.date_time == (1980, 1, 1, 0, 0, 0) for item in archive.infolist()))
             self.assertEqual(len(names), len(set(name.casefold() for name in names)))
         self.assertEqual(pack_skill.assemble(self.root)["sha256"], first["sha256"])
         self.assertEqual(artifact.read_bytes(), original)
+
+    def test_new_release_preserves_historical_release(self):
+        old = self.root / "release/zw3d-plugin-dev-0.2.4.zip"
+        self.put("release/zw3d-plugin-dev-0.2.4.zip", b"historical release")
+        result = pack_skill.assemble(self.root)
+        self.assertEqual(old.read_bytes(), b"historical release")
+        self.assertTrue(result["artifact"].endswith("0.2.5.zip"))
+        candidate = pack_skill.assemble(self.root, version=pack_skill.DEVELOPMENT_VERSION)
+        self.assertTrue(candidate["artifact"].endswith("0.2.5-dev.zip"))
+        self.assertEqual(Path(candidate["artifact"]).read_bytes(), Path(result["artifact"]).read_bytes())
+        with self.assertRaisesRegex(ValueError, "release tag"):
+            pack_skill.assemble(self.root, version="0.2.4")
+
+    def test_corrupt_installer_template_changes_nothing(self):
+        first = pack_skill.assemble(self.root)
+        original = Path(first["artifact"]).read_bytes()
+        self.put("installer-runtime/1.0.0/SetupTemplate.exe", b"modified")
+        with self.assertRaisesRegex(ValueError, "installer template was modified"):
+            pack_skill.assemble(self.root)
+        self.assertEqual(Path(first["artifact"]).read_bytes(), original)
+
+    def test_changed_license_is_rejected_before_publication(self):
+        self.put("licenses/fixture.txt", b"modified license\n")
+        with self.assertRaisesRegex(ValueError, "License checksum differs"):
+            pack_skill.assemble(self.root)
+        self.assertFalse(self.kit.exists())
 
     def test_crlf_text_is_normalized_before_hashes_and_zip(self):
         # Binary CRLF bytes deliberately remain raw. Only UTF-8 text gets Git's LF representation.

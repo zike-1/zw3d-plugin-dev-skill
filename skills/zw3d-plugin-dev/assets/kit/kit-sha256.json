@@ -19,6 +19,8 @@
     "framework/setup.cpp": "f9dcee86967b03805e287151d931b11952f2278dfe7f2e710c9deec18c4f7761",
     "framework/transaction.h": "8a8d127d3e6b2ce5cc74b12f6a3149b5d87d1e6744fb6e319a6e03b6db8952a5",
     "framework/xml_merge.h": "f5699dfe8d0bffe4e3667079f0a66df80dcbdbfee4d2f8bf993853052d7c09fd",
+    "installer-runtime/1.0.0/SetupTemplate.exe": "c3eb026f3388164cac5dbb725c2f321647d02904cbd95b7ade9844bf362568ac",
+    "installer-runtime/1.0.0/checksums.json": "84abdc8cc28ddeafa997980de9a5710190a399def1839af00624e5fcccac2913",
     "runtime/1.1.4/HubManager.exe": "f02307af6434b7be69ac6d3088606d3763a6a100395b2c4b20ccd2c947b0f9e5",
     "runtime/1.1.4/ZwPluginHub.dll": "e2daedac84e066c6933b809541757b2f0565e4568cab7b1f4182301f0a7e3c67",
     "runtime/1.1.4/checksums.json": "224441c06282744d49347711602f884271124974f40d91c38727eee6526278d4",
@@ -28,9 +30,12 @@
     "templates/exe/plugin.cpp.in": "942d9f46f594ad17de1a781e810d02cfbb4d47595aeee00d36cd729fc08b5240",
     "templates/new_plugin.py": "74a3f06fb21e7262345120c561d9404242b906d7f16e54148231a3078ee67acf",
     "templates/tests/test_new_plugin.py": "1fb17e8de13491f841d85de57928cc4aa5e92209d370443173fd94c6ab6a2549",
+    "tools/build_installer_template.py": "4959067de9a1307102d6670b76c41d9755ce55e93c697b4ce93f98e56f8c72b4",
     "tools/build_plugin.py": "1c85daa6ab9557ba0b75c758e4dcd4c560e76c962ca240e2ce1cb37e6a919d47",
     "tools/inspect_installer.py": "2bf8cc6710cee6495ca260832b974c8bff2229e4715844b0bbcafa0204749aeb",
+    "tools/package_existing.py": "f828f67e67400d56f11e5de2cd5b1f53a49865b67121dd47417ebb390d92b8a6",
     "tools/package_lib.py": "3992f1773a7253234b45eef7a915a5bf98fe07f7d6efa4e22f34b5d576e8b26c",
+    "tools/prebuilt_installer.py": "c34c843e9c822fcdd7c3dce33c3c3ff5539ab37e1b1bc6ce896332d59bc5da31",
     "tools/validate_package.py": "ec5e47a5e174d0305921ccec94799b8b03d0259d5e9e4867b2fc962d28918330"
   },
   "schemaVersion": 1

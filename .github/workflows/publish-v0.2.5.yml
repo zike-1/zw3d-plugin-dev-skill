@@ -1,0 +1,55 @@
+name: Publish Skill v0.2.5
+
+# Created on the approved development branch; the main merge initiates release.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-v0.2.5.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-skill-v0.2.5
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'zike-1/zw3d-plugin-dev-skill' && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run release regressions before publication
+        shell: pwsh
+        run: |
+          python tests/package_validation.py
+          if ($LASTEXITCODE -ne 0) { throw 'Package validation failed' }
+          python -m unittest discover -s tests -p test_package_existing.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Prebuilt installer tests failed' }
+          python -m unittest discover -s release -p test_pack_skill.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Skill assembly tests failed' }
+      - name: Build and verify the formal skill ZIP
+        shell: pwsh
+        run: |
+          python release/pack_skill.py
+          if ($LASTEXITCODE -ne 0) { throw 'Skill assembly failed' }
+          $first = (Get-FileHash release/zw3d-plugin-dev-0.2.5.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          python release/pack_skill.py
+          if ($LASTEXITCODE -ne 0) { throw 'Repeated skill assembly failed' }
+          $second = (Get-FileHash release/zw3d-plugin-dev-0.2.5.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($first -ne $second) { throw 'Skill ZIP is not reproducible' }
+          "$first  zw3d-plugin-dev-0.2.5.zip" | Set-Content -Encoding utf8 release/SHA256SUMS-0.2.5.txt
+      - name: Publish release and assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.2.5 release/zw3d-plugin-dev-0.2.5.zip release/SHA256SUMS-0.2.5.txt --target "$env:GITHUB_SHA" --title 'v0.2.5 · 已有插件免编译安装' --notes-file docs/release-0.2.5.md --draft
+          if ($LASTEXITCODE -ne 0) { throw 'Draft release creation failed' }
+          gh release edit v0.2.5 --draft=false
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed; draft retained' }
